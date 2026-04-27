@@ -1,0 +1,47 @@
+{
+  "info": {
+    "name": "Minor-2 Backend API",
+    "_postman_id": "00000000-0000-0000-0000-000000000000",
+    "description": "Basic collection for local API testing (health + chat).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:4000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Chat - Send Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"test-conv\",\n  \"message\": \"Hi, I need help with pricing\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:4000/chat/message",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["chat","message"]
+        }
+      }
+    }
+  ]
+}

@@ -1,4 +1,7 @@
-import dotenv from "dotenv";
+cp .env.example .env   # or copy/rename in Explorer
+docker compose up -d
+npm install
+npm run devimport dotenv from "dotenv";
 
 dotenv.config();
 
