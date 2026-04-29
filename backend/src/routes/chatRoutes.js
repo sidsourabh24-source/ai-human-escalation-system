@@ -3,6 +3,7 @@ import { generateAssistantReply, classifyEscalation } from "../services/claudeSe
 import { buildLeadSnapshot } from "../services/leadService.js";
 import { syncLeadToHubspotMock } from "../integrations/hubspotClient.js";
 import { sendEscalationEmail } from "../services/emailService.js";
+import { ensureConversation, saveMessage } from "../services/conversationService.js";
 
 const router = Router();
 
@@ -10,10 +11,15 @@ router.post("/chat/message", async (req, res, next) => {
   try {
     const { conversationId = "demo-conv", message = "" } = req.body || {};
 
+    await ensureConversation(conversationId);
+    await saveMessage(conversationId, "user", message);
+
     const escalation = await classifyEscalation(message);
     const assistantReply = escalation.shouldEscalate
       ? "I am connecting you with a human agent now."
       : await generateAssistantReply(message);
+
+    await saveMessage(conversationId, "assistant", assistantReply);
 
     const lead = buildLeadSnapshot(message, escalation.signals);
     let crmResult = null;

@@ -1,4 +1,5 @@
 import { classifyEscalation, generateAssistantReply } from "../services/claudeService.js";
+import { ensureConversation, saveMessage } from "../services/conversationService.js";
 
 export function registerChatSocket(io) {
   io.on("connection", (socket) => {
@@ -11,6 +12,9 @@ export function registerChatSocket(io) {
       const { conversationId, message } = payload || {};
       if (!conversationId || !message) return;
 
+      await ensureConversation(conversationId);
+      await saveMessage(conversationId, "user", message);
+
       io.to(conversationId).emit("chat:user-message", {
         conversationId,
         message,
@@ -21,6 +25,8 @@ export function registerChatSocket(io) {
       const reply = escalation.shouldEscalate
         ? "Handoff started. A human agent will join shortly."
         : await generateAssistantReply(message);
+
+      await saveMessage(conversationId, "assistant", reply);
 
       io.to(conversationId).emit("chat:assistant-message", {
         conversationId,

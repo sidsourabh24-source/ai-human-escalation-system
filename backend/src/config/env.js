@@ -1,7 +1,4 @@
-cp .env.example .env   # or copy/rename in Explorer
-docker compose up -d
-npm install
-npm run devimport dotenv from "dotenv";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -18,5 +15,10 @@ export const env = {
   smtpUser: process.env.SMTP_USER || "",
   smtpPass: process.env.SMTP_PASS || "",
   agentAlertEmail: process.env.AGENT_ALERT_EMAIL || "",
-  salesAlertEmail: process.env.SALES_ALERT_EMAIL || ""
+  salesAlertEmail: process.env.SALES_ALERT_EMAIL || "",
+  dbHost: process.env.DB_HOST || "localhost",
+  dbUser: process.env.DB_USER || "ai_user",
+  dbPass: process.env.DB_PASS || "ai_pass",
+  dbName: process.env.DB_NAME || "ai_app",
+  dbPort: Number(process.env.DB_PORT || 3306)
 };
