@@ -14,3 +14,12 @@ export async function sendChatMessage({ conversationId, message }) {
   const payload = await response.json();
   return payload.data;
 }
+
+export async function fetchTranscript(conversationId) {
+  const response = await fetch(`${API_BASE}/api/conversations/${conversationId}/transcript`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch transcript");
+  }
+  const payload = await response.json();
+  return payload.data;
+}

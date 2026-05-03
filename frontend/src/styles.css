@@ -38,6 +38,16 @@ body {
   box-shadow: 0 14px 34px rgba(24, 36, 61, 0.08);
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+}
+
 .chatWindow {
   min-height: 240px;
   max-height: 320px;
@@ -100,11 +110,28 @@ button:disabled {
   color: var(--muted);
 }
 
-.status {
+.badge {
   display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge.ai_active {
+  background: #e6f0ff;
+  color: #0055cc;
+  border: 1px solid #cce0ff;
+}
+
+.badge.handoff_pending {
+  background: #fff8e6;
+  color: #b37700;
+  border: 1px solid #ffeebb;
+}
+
+.badge.agent_active {
   background: #e9f8f2;
   color: #0a7a5a;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 14px;
+  border: 1px solid #cceae1;
 }
