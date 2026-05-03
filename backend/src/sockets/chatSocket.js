@@ -1,5 +1,12 @@
 import { classifyEscalation, generateAssistantReply } from "../services/claudeService.js";
-import { ensureConversation, saveMessage } from "../services/conversationService.js";
+import { 
+  ensureConversation, 
+  saveMessage, 
+  getConversationStatus, 
+  updateConversationStatus, 
+  logEscalation 
+} from "../services/conversationService.js";
+import { sendEscalationEmail } from "../services/emailService.js";
 
 export function registerChatSocket(io) {
   io.on("connection", (socket) => {
@@ -21,10 +28,26 @@ export function registerChatSocket(io) {
         createdAt: new Date().toISOString()
       });
 
-      const escalation = await classifyEscalation(message);
-      const reply = escalation.shouldEscalate
-        ? "Handoff started. A human agent will join shortly."
-        : await generateAssistantReply(message);
+      const currentStatus = await getConversationStatus(conversationId);
+      
+      let reply = "";
+      let escalation = { shouldEscalate: false, signals: {} };
+
+      // AI Suppression Logic
+      if (currentStatus === "handoff_pending" || currentStatus === "agent_active") {
+        reply = "Your message has been sent to the agent. They will reply shortly.";
+      } else {
+        escalation = await classifyEscalation(message);
+        
+        if (escalation.shouldEscalate) {
+          reply = "Handoff started. A human agent will join shortly.";
+          await updateConversationStatus(conversationId, "handoff_pending");
+          await logEscalation(conversationId, escalation.signals);
+          await sendEscalationEmail({ conversationId, userMessage: message });
+        } else {
+          reply = await generateAssistantReply(message);
+        }
+      }
 
       await saveMessage(conversationId, "assistant", reply);
 

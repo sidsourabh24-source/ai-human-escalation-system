@@ -3,7 +3,13 @@ import { generateAssistantReply, classifyEscalation } from "../services/claudeSe
 import { buildLeadSnapshot } from "../services/leadService.js";
 import { syncLeadToHubspotMock } from "../integrations/hubspotClient.js";
 import { sendEscalationEmail } from "../services/emailService.js";
-import { ensureConversation, saveMessage } from "../services/conversationService.js";
+import { 
+  ensureConversation, 
+  saveMessage, 
+  getConversationStatus, 
+  updateConversationStatus, 
+  logEscalation 
+} from "../services/conversationService.js";
 
 const router = Router();
 
@@ -14,10 +20,26 @@ router.post("/chat/message", async (req, res, next) => {
     await ensureConversation(conversationId);
     await saveMessage(conversationId, "user", message);
 
-    const escalation = await classifyEscalation(message);
-    const assistantReply = escalation.shouldEscalate
-      ? "I am connecting you with a human agent now."
-      : await generateAssistantReply(message);
+    const currentStatus = await getConversationStatus(conversationId);
+    
+    let assistantReply = "";
+    let escalation = { shouldEscalate: false, signals: {} };
+
+    // AI Suppression Logic
+    if (currentStatus === "handoff_pending" || currentStatus === "agent_active") {
+      assistantReply = "Your message has been sent to the agent. They will reply shortly.";
+    } else {
+      escalation = await classifyEscalation(message);
+      
+      if (escalation.shouldEscalate) {
+        assistantReply = "I am connecting you with a human agent now.";
+        await updateConversationStatus(conversationId, "handoff_pending");
+        await logEscalation(conversationId, escalation.signals);
+        await sendEscalationEmail({ conversationId, userMessage: message });
+      } else {
+        assistantReply = await generateAssistantReply(message);
+      }
+    }
 
     await saveMessage(conversationId, "assistant", assistantReply);
 
@@ -28,8 +50,8 @@ router.post("/chat/message", async (req, res, next) => {
       crmResult = await syncLeadToHubspotMock(lead);
     }
 
-    if (escalation.shouldEscalate) {
-      await sendEscalationEmail({ conversationId, userMessage: message });
+    if (lead.potentialLead && crmResult === null) {
+      // Just a placeholder in case we need CRM logic outside suppression
     }
 
     res.json({
