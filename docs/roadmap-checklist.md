@@ -5,17 +5,17 @@
 - [x] Backend and frontend base setup done
 - [x] Issue templates and PR template added
 - [x] Kanban and roadmap docs created
-- [ ] GitHub Project board created on repository
-- [ ] Labels and milestones created on GitHub
+- [x] GitHub Project board created on repository
+- [x] Labels and milestones created on GitHub
 
 ## Module 2 - Backend Core and AI Service (Week 2)
 - [x] Express server skeleton done
 - [x] Chat route and escalation stub added
 - [x] Socket.io basic event flow added
 - [x] MySQL schema draft added
-- [ ] JWT auth routes with protected middleware
-- [ ] Real Claude API request integration
-- [ ] DB persistence for conversations and messages
+- [x] JWT auth routes with protected middleware
+- [x] Real Claude API request integration
+- [x] DB persistence for conversations and messages
 
 ## Module 3 - Chat Widget and Handoff (Week 3)
 - [x] React chat widget baseline done
