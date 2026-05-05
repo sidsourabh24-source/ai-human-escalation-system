@@ -76,3 +76,30 @@ export const getConversationTranscript = async (conversationId) => {
     return { status: "unknown", messages: [] };
   }
 };
+
+export const getPendingQueue = async () => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id AS conversationId, c.started_at, 
+              (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS lastMessage,
+              (SELECT IF(anger=1, 'Anger', IF(buying_intent=1, 'Buying Intent', IF(manual_request=1, 'Manual Request', 'Confusion'))) 
+               FROM escalations WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS reason
+       FROM conversations c
+       WHERE c.status = 'handoff_pending'
+       ORDER BY c.updated_at ASC`
+    );
+    return rows.map(r => ({
+      conversationId: r.conversationId,
+      startedAt: r.started_at,
+      lastMessage: r.lastMessage || "No messages",
+      reason: r.reason || "Automatic Escalation"
+    }));
+  } catch (error) {
+    console.error("Error fetching pending queue:", error);
+    return [];
+  }
+};
+
+export const claimConversation = async (conversationId) => {
+  await updateConversationStatus(conversationId, "agent_active");
+};

@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { getConversationTranscript } from "../services/conversationService.js";
-import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
-router.get("/conversations/:id/transcript", protect, async (req, res, next) => {
+// Public route - customers fetch their own transcript by conversation ID (no auth needed)
+router.get("/conversations/:id/transcript", async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!id) {

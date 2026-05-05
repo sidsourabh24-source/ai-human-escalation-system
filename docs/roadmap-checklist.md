@@ -19,14 +19,14 @@
 
 ## Module 3 - Chat Widget and Handoff (Week 3)
 - [x] React chat widget baseline done
-- [ ] Escalation threshold tuning
-- [ ] AI-stop and agent-takeover transaction
-- [ ] Transcript context handoff persistence
+- [x] Escalation threshold tuning
+- [x] AI-stop and agent-takeover transaction
+- [x] Transcript context handoff persistence
 
 ## Module 4 - Agent Dashboard and Notifications (Week 4)
 - [x] Agent dashboard UI placeholder done
-- [ ] Live queue and claim functionality
-- [ ] Agent reply messaging over sockets
+- [x] Live queue and claim functionality
+- [x] Agent reply messaging over sockets
 - [ ] Nodemailer real SMTP integration
 - [ ] Audit trail for handoff actions
 

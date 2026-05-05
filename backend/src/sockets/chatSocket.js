@@ -58,5 +58,18 @@ export function registerChatSocket(io) {
         createdAt: new Date().toISOString()
       });
     });
+
+    socket.on("chat:agent-message", async (payload) => {
+      const { conversationId, message } = payload || {};
+      if (!conversationId || !message) return;
+
+      await saveMessage(conversationId, "agent", message);
+
+      io.to(conversationId).emit("chat:agent-message", {
+        conversationId,
+        message,
+        createdAt: new Date().toISOString()
+      });
+    });
   });
 }

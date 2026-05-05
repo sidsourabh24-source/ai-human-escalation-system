@@ -4,6 +4,7 @@ import healthRoutes from "./routes/healthRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import conversationRoutes from "./routes/conversationRoutes.js";
+import agentRoutes from "./routes/agentRoutes.js";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -21,6 +22,7 @@ app.use("/api", healthRoutes);
 app.use("/api", chatRoutes);
 app.use("/api", authRoutes);
 app.use("/api", conversationRoutes);
+app.use("/api", agentRoutes);
 
 app.use(errorHandler);
 
