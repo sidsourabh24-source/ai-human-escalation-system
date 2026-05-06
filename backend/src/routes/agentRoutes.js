@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getPendingQueue, claimConversation } from "../services/conversationService.js";
+import { getPendingQueue, claimConversation, logAuditAction } from "../services/conversationService.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -20,6 +20,7 @@ router.post("/agent/claim", protect, async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Conversation ID is required" });
     }
     await claimConversation(conversationId);
+    await logAuditAction(conversationId, "agent_claimed", `Agent: ${req.user.email || req.user.id}`);
     
     res.json({ success: true, message: "Conversation claimed" });
   } catch (err) {

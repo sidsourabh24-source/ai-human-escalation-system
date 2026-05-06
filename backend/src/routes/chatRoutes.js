@@ -8,7 +8,8 @@ import {
   saveMessage, 
   getConversationStatus, 
   updateConversationStatus, 
-  logEscalation 
+  logEscalation,
+  logAuditAction 
 } from "../services/conversationService.js";
 
 const router = Router();
@@ -20,13 +21,24 @@ router.post("/chat/message", async (req, res, next) => {
     await ensureConversation(conversationId);
     await saveMessage(conversationId, "user", message);
 
+    const io = req.app.get("io");
+    if (io) {
+      io.to(conversationId).emit("chat:user-message", {
+        conversationId,
+        message,
+        createdAt: new Date().toISOString()
+      });
+    }
+
     const currentStatus = await getConversationStatus(conversationId);
     
     let assistantReply = "";
     let escalation = { shouldEscalate: false, signals: {} };
 
     // AI Suppression Logic
-    if (currentStatus === "handoff_pending" || currentStatus === "agent_active") {
+    if (currentStatus === "agent_active") {
+      assistantReply = null;
+    } else if (currentStatus === "handoff_pending") {
       assistantReply = "Your message has been sent to the agent. They will reply shortly.";
     } else {
       escalation = await classifyEscalation(message);
@@ -35,13 +47,16 @@ router.post("/chat/message", async (req, res, next) => {
         assistantReply = "I am connecting you with a human agent now.";
         await updateConversationStatus(conversationId, "handoff_pending");
         await logEscalation(conversationId, escalation.signals);
+        await logAuditAction(conversationId, "escalation_triggered", `User message: ${message}`);
         await sendEscalationEmail({ conversationId, userMessage: message });
       } else {
         assistantReply = await generateAssistantReply(message);
       }
     }
 
-    await saveMessage(conversationId, "assistant", assistantReply);
+    if (assistantReply !== null) {
+      await saveMessage(conversationId, "assistant", assistantReply);
+    }
 
     const lead = buildLeadSnapshot(message, escalation.signals);
     let crmResult = null;

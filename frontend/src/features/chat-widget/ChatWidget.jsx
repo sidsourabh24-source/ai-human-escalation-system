@@ -1,5 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { sendChatMessage, fetchTranscript } from "../../services/chatApi";
+import io from "socket.io-client";
+
+const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:4000");
 
 function newConversationId() {
   return `conv-${Math.random().toString(36).slice(2, 10)}`;
@@ -31,6 +34,19 @@ export default function ChatWidget() {
         }
       })
       .catch(err => console.error("Session recovery failed:", err));
+
+    socket.emit("chat:join", { conversationId });
+
+    const handleAgentMessage = (msg) => {
+      setMessages(prev => [...prev, { sender: "agent", body: msg.message }]);
+      setStatus("agent_active");
+    };
+
+    socket.on("chat:agent-message", handleAgentMessage);
+
+    return () => {
+      socket.off("chat:agent-message", handleAgentMessage);
+    };
   }, [conversationId]);
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
@@ -46,9 +62,12 @@ export default function ChatWidget() {
 
     try {
       const result = await sendChatMessage({ conversationId, message: text });
-      setMessages((prev) => [...prev, { sender: "assistant", body: result.assistantReply }]);
+      
+      if (result.assistantReply) {
+        setMessages((prev) => [...prev, { sender: "assistant", body: result.assistantReply }]);
+      }
 
-      if (result.escalation?.shouldEscalate || status === "handoff_pending" || status === "agent_active") {
+      if (status !== "agent_active" && (result.escalation?.shouldEscalate || status === "handoff_pending")) {
         setStatus("handoff_pending");
       }
     } catch (error) {
@@ -85,6 +104,9 @@ export default function ChatWidget() {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") onSend();
+          }}
           placeholder="Type your message"
         />
         <button onClick={onSend} disabled={!canSend}>

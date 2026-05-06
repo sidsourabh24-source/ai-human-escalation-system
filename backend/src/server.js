@@ -13,6 +13,8 @@ const io = new Server(server, {
   }
 });
 
+app.set("io", io);
+
 registerChatSocket(io);
 
 server.listen(env.port, () => {

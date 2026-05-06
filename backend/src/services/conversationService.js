@@ -80,17 +80,18 @@ export const getConversationTranscript = async (conversationId) => {
 export const getPendingQueue = async () => {
   try {
     const [rows] = await pool.query(
-      `SELECT c.id AS conversationId, c.started_at, 
+      `SELECT c.id AS conversationId, c.started_at, c.status,
               (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS lastMessage,
               (SELECT IF(anger=1, 'Anger', IF(buying_intent=1, 'Buying Intent', IF(manual_request=1, 'Manual Request', 'Confusion'))) 
                FROM escalations WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS reason
        FROM conversations c
-       WHERE c.status = 'handoff_pending'
+       WHERE c.status IN ('handoff_pending', 'agent_active')
        ORDER BY c.updated_at ASC`
     );
     return rows.map(r => ({
       conversationId: r.conversationId,
       startedAt: r.started_at,
+      status: r.status,
       lastMessage: r.lastMessage || "No messages",
       reason: r.reason || "Automatic Escalation"
     }));
@@ -102,4 +103,15 @@ export const getPendingQueue = async () => {
 
 export const claimConversation = async (conversationId) => {
   await updateConversationStatus(conversationId, "agent_active");
+};
+
+export const logAuditAction = async (conversationId, action, details = null) => {
+  try {
+    await pool.query(
+      `INSERT INTO audit_logs (conversation_id, action, details) VALUES (?, ?, ?)`,
+      [conversationId, action, details]
+    );
+  } catch (error) {
+    console.error("Error logging audit action:", error);
+  }
 };

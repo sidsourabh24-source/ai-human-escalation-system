@@ -73,6 +73,11 @@ body {
   background: #edf2ff;
 }
 
+.bubble.agent {
+  background: #fff8e6;
+  border-left: 3px solid #b37700;
+}
+
 .row {
   display: flex;
   gap: 8px;

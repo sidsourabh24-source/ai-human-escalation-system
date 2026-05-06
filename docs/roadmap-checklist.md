@@ -27,8 +27,8 @@
 - [x] Agent dashboard UI placeholder done
 - [x] Live queue and claim functionality
 - [x] Agent reply messaging over sockets
-- [ ] Nodemailer real SMTP integration
-- [ ] Audit trail for handoff actions
+- [x] Nodemailer real SMTP integration
+- [x] Audit trail for handoff actions
 
 ## Module 5 - Lead Pipeline and Final Polish (Week 5)
 - [x] Mocked HubSpot adapter added
