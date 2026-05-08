@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchLiveQueue, claimConversation } from "../../services/agentApi";
 import { fetchTranscript } from "../../services/chatApi";
+import { Bot, User, Headphones, SendHorizontal, LogOut, ArrowLeft, Inbox, MessageSquare } from "lucide-react";
 import io from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:4000");
@@ -12,6 +13,13 @@ export default function AgentDashboard() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const navigate = useNavigate();
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const refreshQueue = async () => {
     try {
@@ -88,18 +96,30 @@ export default function AgentDashboard() {
     return (
       <section className="card">
         <div className="card-header">
-          <h2>Active Chat: {activeChat}</h2>
-          <button onClick={() => {
-            setActiveChat(null);
-            setMessages([]);
-            localStorage.removeItem("agent_active_chat");
-          }}>Back to Queue</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className="btn-outline" style={{ padding: '8px 12px' }} onClick={() => {
+              setActiveChat(null);
+              setMessages([]);
+              localStorage.removeItem("agent_active_chat");
+            }}>
+              <ArrowLeft size={18} /> Back
+            </button>
+            <h2 style={{ margin: 0 }}>Active Chat: <span style={{ fontWeight: '400', fontSize: '16px' }}>{activeChat}</span></h2>
+          </div>
         </div>
         
-        <div className="chatWindow">
+        <div className="chatWindow" ref={scrollRef}>
           {messages.map((message, index) => (
-            <div key={`${message.sender}-${index}`} className={`bubble ${message.sender}`}>
-              <strong>{message.sender}:</strong> {message.body}
+            <div key={`${message.sender}-${index}`} className={`bubble-container ${message.sender}`}>
+              <div className="bubble-header">
+                {message.sender === "assistant" && <Bot size={14} />}
+                {message.sender === "agent" && <Headphones size={14} />}
+                {message.sender === "user" && <User size={14} />}
+                <span>{message.sender === "assistant" ? "Nexus AI" : message.sender === "agent" ? "You (Agent)" : "Customer"}</span>
+              </div>
+              <div className="bubble">
+                {message.body}
+              </div>
             </div>
           ))}
         </div>
@@ -113,7 +133,9 @@ export default function AgentDashboard() {
             }}
             placeholder="Type your reply to customer..."
           />
-          <button onClick={handleSend}>Send Reply</button>
+          <button onClick={handleSend} disabled={!input.trim()}>
+            <SendHorizontal size={18} /> Send
+          </button>
         </div>
       </section>
     );
@@ -124,27 +146,35 @@ export default function AgentDashboard() {
       <div className="card-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
           <h2>Agent Dashboard</h2>
-          <span className="badge agent_active">Live Queue: {queue.length}</span>
+          <span className="badge agent_active">
+            <Inbox size={14} /> Live Queue: {queue.length}
+          </span>
         </div>
-        <button onClick={() => {
+        <button className="btn-danger" style={{ padding: '8px 16px' }} onClick={() => {
           localStorage.removeItem("agent_token");
           navigate("/agent/login");
-        }} style={{background: 'transparent', color: '#dc3545', border: '1px solid #dc3545'}}>Logout</button>
+        }}>
+          <LogOut size={16} /> Logout
+        </button>
       </div>
 
       {queue.length === 0 ? (
-        <p className="muted" style={{marginTop: '1rem'}}>No pending escalations in queue.</p>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+          <MessageSquare size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+          <p>No pending escalations in queue.</p>
+          <p style={{ fontSize: '14px', marginTop: '8px' }}>You're all caught up!</p>
+        </div>
       ) : (
         queue.map((item) => (
           <article className="queueItem" key={item.conversationId}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>{item.conversationId}</h3>
-              {item.status === 'agent_active' && <span className="badge agent_active" style={{ fontSize: '0.8rem' }}>In Progress</span>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>{item.conversationId}</h3>
+              {item.status === 'agent_active' && <span className="badge agent_active" style={{ fontSize: '11px', padding: '4px 8px' }}>In Progress</span>}
             </div>
-            <p><strong>Reason:</strong> {item.reason}</p>
-            <p><strong>Last message:</strong> {item.lastMessage}</p>
-            <button onClick={() => handleClaim(item.conversationId)} style={{marginTop: '10px'}}>
-              {item.status === 'agent_active' ? "Resume Conversation" : "Claim Conversation"}
+            <p className="muted" style={{ marginBottom: '8px' }}><strong>Reason:</strong> <span style={{ color: 'var(--accent-warning)' }}>{item.reason}</span></p>
+            <p className="muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}><strong>Last:</strong> {item.lastMessage}</p>
+            <button onClick={() => handleClaim(item.conversationId)} style={{marginTop: '16px'}}>
+              <Headphones size={16} /> {item.status === 'agent_active' ? "Resume Chat" : "Claim Conversation"}
             </button>
           </article>
         ))

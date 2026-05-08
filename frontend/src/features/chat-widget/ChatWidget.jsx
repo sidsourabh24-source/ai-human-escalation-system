@@ -1,5 +1,6 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { sendChatMessage, fetchTranscript } from "../../services/chatApi";
+import { Bot, User, Headphones, SendHorizontal, Loader2, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import io from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:4000");
@@ -16,9 +17,17 @@ export default function ChatWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
-    { sender: "assistant", body: "Hi, I am your AI assistant. How can I help?" }
+    { sender: "assistant", body: "Hi, I am Nexus AI. How can I help you today?" }
   ]);
   const [status, setStatus] = useState("ai_active");
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     localStorage.setItem("chat_conv_id", conversationId);
@@ -83,21 +92,41 @@ export default function ChatWidget() {
   return (
     <section className="card">
       <div className="card-header">
-        <h2>Customer Chat Widget</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2>Customer Support</h2>
+        </div>
         <span className={`badge ${status}`}>
-          {status === "ai_active" && "🤖 AI Active"}
-          {status === "handoff_pending" && "⏳ Handoff Pending"}
-          {status === "agent_active" && "👨‍💻 Agent Connected"}
+          {status === "ai_active" && <><Sparkles size={14} /> AI Active</>}
+          {status === "handoff_pending" && <><Clock size={14} /> Handoff Pending</>}
+          {status === "agent_active" && <><CheckCircle2 size={14} /> Agent Connected</>}
         </span>
       </div>
-      <p className="muted">Conversation: {conversationId}</p>
+      <p className="muted" style={{ marginBottom: '16px' }}>Session ID: {conversationId}</p>
 
-      <div className="chatWindow">
+      <div className="chatWindow" ref={scrollRef}>
         {messages.map((message, index) => (
-          <div key={`${message.sender}-${index}`} className={`bubble ${message.sender}`}>
-            <strong>{message.sender}:</strong> {message.body}
+          <div key={`${message.sender}-${index}`} className={`bubble-container ${message.sender}`}>
+            <div className="bubble-header">
+              {message.sender === "assistant" && <Bot size={14} />}
+              {message.sender === "agent" && <Headphones size={14} />}
+              {message.sender === "user" && <User size={14} />}
+              <span>{message.sender === "assistant" ? "Nexus AI" : message.sender === "agent" ? "Support Agent" : "You"}</span>
+            </div>
+            <div className="bubble">
+              {message.body}
+            </div>
           </div>
         ))}
+        {loading && (
+          <div className="bubble-container assistant">
+            <div className="bubble-header">
+              <Bot size={14} /> <span>Nexus AI</span>
+            </div>
+            <div className="bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Loader2 size={16} className="lucide-spin" style={{ animation: 'spin 2s linear infinite' }} /> Typing...
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="row">
@@ -107,12 +136,16 @@ export default function ChatWidget() {
           onKeyDown={(event) => {
             if (event.key === "Enter") onSend();
           }}
-          placeholder="Type your message"
+          placeholder="Type your message..."
+          disabled={loading}
         />
         <button onClick={onSend} disabled={!canSend}>
-          {loading ? "Sending..." : "Send"}
+          {loading ? <Loader2 size={18} style={{ animation: 'spin 2s linear infinite' }} /> : <><SendHorizontal size={18} /> Send</>}
         </button>
       </div>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </section>
   );
 }
