@@ -39,3 +39,17 @@ export async function claimConversation(conversationId) {
   }
   return response.json();
 }
+
+export async function fetchAnalytics() {
+  const response = await fetch(`${API_BASE}/api/agent/analytics`, {
+    headers: getHeaders()
+  });
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Unauthorized");
+    }
+    throw new Error("Failed to fetch analytics");
+  }
+  const payload = await response.json();
+  return payload.data;
+}

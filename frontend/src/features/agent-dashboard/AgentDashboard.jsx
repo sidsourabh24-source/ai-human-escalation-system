@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchLiveQueue, claimConversation } from "../../services/agentApi";
+import { fetchLiveQueue, claimConversation, fetchAnalytics } from "../../services/agentApi";
 import { fetchTranscript } from "../../services/chatApi";
-import { Bot, User, Headphones, SendHorizontal, LogOut, ArrowLeft, Inbox, MessageSquare } from "lucide-react";
+import { Bot, User, Headphones, SendHorizontal, LogOut, ArrowLeft, Inbox, MessageSquare, BarChart3, AlertCircle, Users } from "lucide-react";
 import io from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:4000");
@@ -12,6 +12,7 @@ export default function AgentDashboard() {
   const [activeChat, setActiveChat] = useState(() => localStorage.getItem("agent_active_chat") || null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [analytics, setAnalytics] = useState(null);
   const navigate = useNavigate();
   const scrollRef = useRef(null);
 
@@ -25,6 +26,8 @@ export default function AgentDashboard() {
     try {
       const data = await fetchLiveQueue();
       setQueue(data);
+      const stats = await fetchAnalytics();
+      setAnalytics(stats);
     } catch (err) {
       if (err.message === "Unauthorized") {
         navigate("/agent/login");
@@ -142,7 +145,40 @@ export default function AgentDashboard() {
   }
 
   return (
-    <section className="card">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {analytics && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-primary)' }}>
+              <MessageSquare size={24} />
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Total Chats</p>
+              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalConversations}</h3>
+            </div>
+          </div>
+          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-warning)' }}>
+              <AlertCircle size={24} />
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Escalations</p>
+              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalEscalations}</h3>
+            </div>
+          </div>
+          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-success)' }}>
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Leads Synced</p>
+              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalLeads}</h3>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <section className="card">
       <div className="card-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
           <h2>Agent Dashboard</h2>
@@ -179,6 +215,7 @@ export default function AgentDashboard() {
           </article>
         ))
       )}
-    </section>
+      </section>
+    </div>
   );
 }
