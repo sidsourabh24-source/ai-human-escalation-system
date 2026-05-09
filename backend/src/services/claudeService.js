@@ -88,3 +88,38 @@ Respond ONLY with a valid JSON object matching this exact structure:
     return fallbackClassification();
   }
 }
+
+export async function extractLeadData(userMessage) {
+  if (!userMessage || !userMessage.trim() || !env.claudeApiKey) {
+    return { name: null, email: null, company: null, budget: null, raw: userMessage };
+  }
+
+  try {
+    const response = await anthropic.messages.create({
+      model: env.claudeModel,
+      max_tokens: 200,
+      messages: [{ role: "user", content: userMessage }],
+      system: `Extract lead details from the user's message.
+Return a JSON object with these keys (use null if not found):
+{
+  "name": string | null,
+  "email": string | null,
+  "company": string | null,
+  "budget": string | null
+}
+Respond ONLY with the JSON object.`
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return { ...parsed, raw: userMessage };
+    }
+  } catch (error) {
+    console.error("Claude API Lead Extraction Error:", error);
+  }
+  
+  return { name: null, email: null, company: null, budget: null, raw: userMessage };
+}

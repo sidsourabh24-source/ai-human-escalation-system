@@ -126,7 +126,7 @@ npm run dev -w frontend
 | Week 2 | Express APIs, MySQL schema, JWT auth, Claude AI | ✅ Complete |
 | Week 3 | Chat widget, escalation engine, AI suppression, session recovery | ✅ Complete |
 | Week 4 | Agent dashboard, live queue, claim flow, real-time messaging, email alerts | ✅ Complete |
-| Week 5 | Lead pipeline refinement, analytics, final polish & demo | 🔄 In Progress |
+| Week 5 | Lead pipeline refinement, analytics, final polish & demo | ✅ Complete |
 
 ---
 

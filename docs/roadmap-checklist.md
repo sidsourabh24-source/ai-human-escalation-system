@@ -32,7 +32,7 @@
 
 ## Module 5 - Lead Pipeline and Final Polish (Week 5)
 - [x] Mocked HubSpot adapter added
-- [ ] Lead extraction refinement
-- [ ] Retry and failure handling for CRM sync
-- [ ] Basic analytics cards and metrics
-- [ ] Final README demo walkthrough and submission pack
+- [x] Lead extraction refinement
+- [x] Retry and failure handling for CRM sync
+- [x] Basic analytics cards and metrics
+- [x] Final README demo walkthrough and submission pack

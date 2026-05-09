@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getPendingQueue, claimConversation, logAuditAction } from "../services/conversationService.js";
+import { getPendingQueue, claimConversation, logAuditAction, getAnalytics } from "../services/conversationService.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -8,6 +8,15 @@ router.get("/agent/queue", protect, async (req, res, next) => {
   try {
     const queue = await getPendingQueue();
     res.json({ success: true, data: queue });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/agent/analytics", protect, async (req, res, next) => {
+  try {
+    const data = await getAnalytics();
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

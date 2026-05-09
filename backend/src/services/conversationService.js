@@ -115,3 +115,27 @@ export const logAuditAction = async (conversationId, action, details = null) => 
     console.error("Error logging audit action:", error);
   }
 };
+
+export const getAnalytics = async () => {
+  try {
+    const [[{ totalConversations }]] = await pool.query(`SELECT COUNT(*) as totalConversations FROM conversations`);
+    const [[{ totalEscalations }]] = await pool.query(`SELECT COUNT(*) as totalEscalations FROM escalations`);
+    const [[{ pendingQueue }]] = await pool.query(`SELECT COUNT(*) as pendingQueue FROM conversations WHERE status = 'handoff_pending'`);
+    const [[{ totalLeads }]] = await pool.query(`SELECT COUNT(*) as totalLeads FROM leads`);
+    return { totalConversations, totalEscalations, pendingQueue, totalLeads };
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    return { totalConversations: 0, totalEscalations: 0, pendingQueue: 0, totalLeads: 0 };
+  }
+};
+
+export const saveLead = async (conversationId, summary, crmStatus) => {
+  try {
+    await pool.query(
+      `INSERT INTO leads (conversation_id, summary, crm_sync_status) VALUES (?, ?, ?)`,
+      [conversationId, summary, crmStatus]
+    );
+  } catch (error) {
+    console.error("Error saving lead:", error);
+  }
+};

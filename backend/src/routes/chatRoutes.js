@@ -9,7 +9,8 @@ import {
   getConversationStatus, 
   updateConversationStatus, 
   logEscalation,
-  logAuditAction 
+  logAuditAction,
+  saveLead
 } from "../services/conversationService.js";
 
 const router = Router();
@@ -58,15 +59,27 @@ router.post("/chat/message", async (req, res, next) => {
       await saveMessage(conversationId, "assistant", assistantReply);
     }
 
-    const lead = buildLeadSnapshot(message, escalation.signals);
+    const lead = await buildLeadSnapshot(message, escalation.signals);
     let crmResult = null;
 
     if (lead.potentialLead) {
-      crmResult = await syncLeadToHubspotMock(lead);
-    }
-
-    if (lead.potentialLead && crmResult === null) {
-      // Just a placeholder in case we need CRM logic outside suppression
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          crmResult = await syncLeadToHubspotMock(lead);
+          break; // Success
+        } catch (error) {
+          retries--;
+          console.warn(`CRM sync failed, retries left: ${retries}. Error: ${error.message}`);
+          if (retries === 0) {
+            console.error("CRM sync failed after 3 attempts.");
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      let finalStatus = crmResult ? "mocked" : "failed";
+      await saveLead(conversationId, lead.summary, finalStatus);
     }
 
     res.json({
