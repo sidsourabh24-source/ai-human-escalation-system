@@ -53,3 +53,17 @@ export async function fetchAnalytics() {
   const payload = await response.json();
   return payload.data;
 }
+
+export async function fetchConversationSummary(conversationId) {
+  const response = await fetch(`${API_BASE}/api/agent/conversations/${conversationId}/summary`, {
+    headers: getHeaders()
+  });
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Unauthorized");
+    }
+    throw new Error("Failed to fetch conversation summary");
+  }
+  const payload = await response.json();
+  return payload.data;
+}

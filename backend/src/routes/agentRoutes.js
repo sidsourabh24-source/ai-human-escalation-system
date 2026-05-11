@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { getPendingQueue, claimConversation, logAuditAction, getAnalytics } from "../services/conversationService.js";
+import { getPendingQueue, claimConversation, logAuditAction, getAnalytics, getConversationTranscript } from "../services/conversationService.js";
+import { generateConversationSummary } from "../services/claudeService.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -32,6 +33,26 @@ router.post("/agent/claim", protect, async (req, res, next) => {
     await logAuditAction(conversationId, "agent_claimed", `Agent: ${req.user.email || req.user.id}`);
     
     res.json({ success: true, message: "Conversation claimed" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/agent/conversations/:id/summary", protect, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Conversation ID is required" });
+    }
+
+    const transcript = await getConversationTranscript(id);
+    if (!transcript || !transcript.messages) {
+      return res.status(404).json({ success: false, message: "Transcript not found" });
+    }
+
+    const summary = await generateConversationSummary(transcript.messages);
+    
+    res.json({ success: true, data: summary });
   } catch (err) {
     next(err);
   }

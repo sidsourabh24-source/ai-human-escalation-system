@@ -121,5 +121,77 @@ Respond ONLY with the JSON object.`
     console.error("Claude API Lead Extraction Error:", error);
   }
   
-  return { name: null, email: null, company: null, budget: null, raw: userMessage };
+}
+
+export async function generateConversationSummary(messages) {
+  if (!messages || messages.length === 0) {
+    return {
+      issue: "No details available",
+      points: [],
+      actionsTaken: "None",
+      status: "Waiting for information",
+      priority: "Low",
+      suggestedAction: "Wait for customer input"
+    };
+  }
+
+  if (!env.claudeApiKey) {
+    const userMessages = messages.filter(m => m.sender === 'user');
+    const lastUserMsg = userMessages.length > 0 ? userMessages[userMessages.length - 1].body : "Customer needs help";
+    
+    return {
+      issue: `User said: "${lastUserMsg}" (Mock Summary)`,
+      points: ["User initiated chat", "Escalated to human agent"],
+      actionsTaken: "System transferred chat",
+      status: "Agent Active",
+      priority: "Medium",
+      suggestedAction: "Review conversation history and assist"
+    };
+  }
+
+  try {
+    const transcriptText = messages.map(m => `${m.sender}: ${m.body}`).join("\n");
+    
+    const response = await anthropic.messages.create({
+      model: env.claudeModel,
+      max_tokens: 300,
+      messages: [{ role: "user", content: `Please summarize the following conversation.\n\n${transcriptText}` }],
+      system: `Analyze the conversation transcript and provide a real-time summary for a support agent.
+Extract the following information:
+1. issue: The main problem or reason the user is chatting.
+2. points: An array of strings representing the key discussion points or details shared so far.
+3. actionsTaken: A brief description of what has been done so far (by the user or assistant).
+4. status: Current state of the conversation (e.g., "Pending agent review", "Waiting for user reply", "Troubleshooting").
+5. priority: Rate the urgency as "Low", "Medium", "High", or "Critical".
+6. suggestedAction: A brief recommendation on what the agent should do next.
+
+Respond ONLY with a valid JSON object matching this exact structure:
+{
+  "issue": string,
+  "points": string[],
+  "actionsTaken": string,
+  "status": string,
+  "priority": string,
+  "suggestedAction": string
+}`
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (error) {
+    console.error("Claude API Summary Error:", error);
+  }
+  
+  return {
+    issue: "Could not generate summary",
+    points: [],
+    actionsTaken: "Unknown",
+    status: "Error",
+    priority: "Medium",
+    suggestedAction: "Read the chat transcript manually"
+  };
 }

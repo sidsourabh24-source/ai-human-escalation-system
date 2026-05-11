@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchLiveQueue, claimConversation, fetchAnalytics } from "../../services/agentApi";
+import { fetchLiveQueue, claimConversation, fetchAnalytics, fetchConversationSummary } from "../../services/agentApi";
 import { fetchTranscript } from "../../services/chatApi";
 import { Bot, User, Headphones, SendHorizontal, LogOut, ArrowLeft, Inbox, MessageSquare, BarChart3, AlertCircle, Users } from "lucide-react";
 import io from "socket.io-client";
@@ -13,8 +13,22 @@ export default function AgentDashboard() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [analytics, setAnalytics] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const navigate = useNavigate();
   const scrollRef = useRef(null);
+
+  const loadSummary = async (cid) => {
+    try {
+      setIsSummaryLoading(true);
+      const data = await fetchConversationSummary(cid);
+      setSummary(data);
+    } catch (err) {
+      console.error("Failed to fetch summary:", err);
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,6 +58,7 @@ export default function AgentDashboard() {
         .then(data => {
           setMessages(data.messages || []);
           setActiveChat(savedChat);
+          loadSummary(savedChat);
         })
         .catch(err => {
           console.error("Failed to restore active chat:", err);
@@ -74,6 +89,13 @@ export default function AgentDashboard() {
     }
   }, [activeChat]);
 
+  // Dynamic summary refresh every 4 messages
+  useEffect(() => {
+    if (activeChat && messages.length > 0 && messages.length % 4 === 0) {
+      loadSummary(activeChat);
+    }
+  }, [messages.length, activeChat]);
+
   const handleClaim = async (conversationId) => {
     try {
       await claimConversation(conversationId);
@@ -81,6 +103,7 @@ export default function AgentDashboard() {
       setMessages(transcript.messages || []);
       setActiveChat(conversationId);
       localStorage.setItem("agent_active_chat", conversationId);
+      loadSummary(conversationId);
       refreshQueue();
     } catch (err) {
       console.error(err);
@@ -97,50 +120,103 @@ export default function AgentDashboard() {
 
   if (activeChat) {
     return (
-      <section className="card">
-        <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button className="btn-outline" style={{ padding: '8px 12px' }} onClick={() => {
-              setActiveChat(null);
-              setMessages([]);
-              localStorage.removeItem("agent_active_chat");
-            }}>
-              <ArrowLeft size={18} /> Back
-            </button>
-            <h2 style={{ margin: 0 }}>Active Chat: <span style={{ fontWeight: '400', fontSize: '16px' }}>{activeChat}</span></h2>
-          </div>
-        </div>
-        
-        <div className="chatWindow" ref={scrollRef}>
-          {messages.map((message, index) => (
-            <div key={`${message.sender}-${index}`} className={`bubble-container ${message.sender}`}>
-              <div className="bubble-header">
-                {message.sender === "assistant" && <Bot size={14} />}
-                {message.sender === "agent" && <Headphones size={14} />}
-                {message.sender === "user" && <User size={14} />}
-                <span>{message.sender === "assistant" ? "Nexus AI" : message.sender === "agent" ? "You (Agent)" : "Customer"}</span>
-              </div>
-              <div className="bubble">
-                {message.body}
-              </div>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <section className="card" style={{ flex: 1, minWidth: 0 }}>
+          <div className="card-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button className="btn-outline" style={{ padding: '8px 12px' }} onClick={() => {
+                setActiveChat(null);
+                setMessages([]);
+                setSummary(null);
+                localStorage.removeItem("agent_active_chat");
+              }}>
+                <ArrowLeft size={18} /> Back
+              </button>
+              <h2 style={{ margin: 0 }}>Active Chat: <span style={{ fontWeight: '400', fontSize: '16px' }}>{activeChat}</span></h2>
             </div>
-          ))}
-        </div>
+          </div>
+          
+          <div className="chatWindow" ref={scrollRef}>
+            {messages.map((message, index) => (
+              <div key={`${message.sender}-${index}`} className={`bubble-container ${message.sender}`}>
+                <div className="bubble-header">
+                  {message.sender === "assistant" && <Bot size={14} />}
+                  {message.sender === "agent" && <Headphones size={14} />}
+                  {message.sender === "user" && <User size={14} />}
+                  <span>{message.sender === "assistant" ? "Nexus AI" : message.sender === "agent" ? "You (Agent)" : "Customer"}</span>
+                </div>
+                <div className="bubble">
+                  {message.body}
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <div className="row">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSend();
-            }}
-            placeholder="Type your reply to customer..."
-          />
-          <button onClick={handleSend} disabled={!input.trim()}>
-            <SendHorizontal size={18} /> Send
-          </button>
-        </div>
-      </section>
+          <div className="row">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSend();
+              }}
+              placeholder="Type your reply to customer..."
+            />
+            <button onClick={handleSend} disabled={!input.trim()}>
+              <SendHorizontal size={18} /> Send
+            </button>
+          </div>
+        </section>
+
+        {/* Summary Side Panel */}
+        <section className="card" style={{ width: '320px', flexShrink: 0, position: 'sticky', top: '20px' }}>
+          <div className="card-header" style={{ paddingBottom: '12px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Bot size={18} /> Chat Summary
+            </h3>
+            <button className="btn-outline" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => loadSummary(activeChat)} disabled={isSummaryLoading}>
+              {isSummaryLoading ? 'Updating...' : 'Refresh'}
+            </button>
+          </div>
+          <div style={{ padding: '16px', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {summary ? (
+              <>
+                <div>
+                  <strong style={{ color: 'var(--text-color)' }}>Issue:</strong>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>{summary.issue}</p>
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-color)' }}>Status:</strong>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--accent-warning)', fontWeight: '500' }}>{summary.status}</p>
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-color)' }}>Priority:</strong>
+                  <p style={{ margin: '4px 0 0 0', color: summary.priority === 'High' || summary.priority === 'Critical' ? 'var(--accent-warning)' : 'var(--text-muted)' }}>{summary.priority}</p>
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-color)' }}>Suggested Action:</strong>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>{summary.suggestedAction}</p>
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-color)' }}>Actions Taken:</strong>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>{summary.actionsTaken}</p>
+                </div>
+                {summary.points && summary.points.length > 0 && (
+                  <div>
+                    <strong style={{ color: 'var(--text-color)' }}>Key Points:</strong>
+                    <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', color: 'var(--text-muted)' }}>
+                      {summary.points.map((pt, i) => (
+                        <li key={i}>{pt}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="muted">Loading summary...</p>
+            )}
+          </div>
+        </section>
+      </div>
     );
   }
 
