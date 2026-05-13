@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* LIGHT THEME VARIABLES */
   --bg-gradient-start: #f8fafc;

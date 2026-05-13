@@ -69,8 +69,16 @@ export default function AgentDashboard() {
 
   useEffect(() => {
     refreshQueue();
-    const interval = setInterval(refreshQueue, 5000);
-    return () => clearInterval(interval);
+    
+    const handleQueueUpdate = () => {
+      refreshQueue();
+    };
+    
+    socket.on("queue:update", handleQueueUpdate);
+    
+    return () => {
+      socket.off("queue:update", handleQueueUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -123,8 +131,8 @@ export default function AgentDashboard() {
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         <section className="card" style={{ flex: 1, minWidth: 0 }}>
           <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button className="btn-outline" style={{ padding: '8px 12px' }} onClick={() => {
+            <div className="flex items-center gap-3">
+              <button className="btn-outline px-3 py-2" onClick={() => {
                 setActiveChat(null);
                 setMessages([]);
                 setSummary(null);
@@ -132,7 +140,7 @@ export default function AgentDashboard() {
               }}>
                 <ArrowLeft size={18} /> Back
               </button>
-              <h2 style={{ margin: 0 }}>Active Chat: <span style={{ fontWeight: '400', fontSize: '16px' }}>{activeChat}</span></h2>
+              <h2 className="m-0">Active Chat: <span className="font-normal text-base">{activeChat}</span></h2>
             </div>
           </div>
           
@@ -169,15 +177,15 @@ export default function AgentDashboard() {
 
         {/* Summary Side Panel */}
         <section className="card" style={{ width: '320px', flexShrink: 0, position: 'sticky', top: '20px' }}>
-          <div className="card-header" style={{ paddingBottom: '12px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="card-header pb-3 border-b border-borderLight dark:border-borderDark flex justify-between items-center">
+            <h3 className="m-0 text-base flex items-center gap-2">
               <Bot size={18} /> Chat Summary
             </h3>
-            <button className="btn-outline" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => loadSummary(activeChat)} disabled={isSummaryLoading}>
+            <button className="btn-outline px-2 py-1 text-xs" onClick={() => loadSummary(activeChat)} disabled={isSummaryLoading}>
               {isSummaryLoading ? 'Updating...' : 'Refresh'}
             </button>
           </div>
-          <div style={{ padding: '16px', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="p-4 text-sm flex flex-col gap-4">
             {summary ? (
               <>
                 <div>
@@ -221,34 +229,34 @@ export default function AgentDashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="flex flex-col gap-5">
       {analytics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-primary)' }}>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+          <div className="card p-4 flex items-center gap-3">
+            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-primary">
               <MessageSquare size={24} />
             </div>
             <div>
-              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Total Chats</p>
-              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalConversations}</h3>
+              <p className="muted m-0 text-sm">Total Chats</p>
+              <h3 className="m-0 text-2xl">{analytics.totalConversations}</h3>
             </div>
           </div>
-          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-warning)' }}>
+          <div className="card p-4 flex items-center gap-3">
+            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-warning">
               <AlertCircle size={24} />
             </div>
             <div>
-              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Escalations</p>
-              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalEscalations}</h3>
+              <p className="muted m-0 text-sm">Escalations</p>
+              <h3 className="m-0 text-2xl">{analytics.totalEscalations}</h3>
             </div>
           </div>
-          <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--accent-success)' }}>
+          <div className="card p-4 flex items-center gap-3">
+            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-success">
               <Users size={24} />
             </div>
             <div>
-              <p className="muted" style={{ margin: 0, fontSize: '14px' }}>Leads Synced</p>
-              <h3 style={{ margin: 0, fontSize: '24px' }}>{analytics.totalLeads}</h3>
+              <p className="muted m-0 text-sm">Leads Synced</p>
+              <h3 className="m-0 text-2xl">{analytics.totalLeads}</h3>
             </div>
           </div>
         </div>
@@ -256,13 +264,13 @@ export default function AgentDashboard() {
 
       <section className="card">
       <div className="card-header">
-        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+        <div className="flex items-center gap-4">
           <h2>Agent Dashboard</h2>
           <span className="badge agent_active">
             <Inbox size={14} /> Live Queue: {queue.length}
           </span>
         </div>
-        <button className="btn-danger" style={{ padding: '8px 16px' }} onClick={() => {
+        <button className="btn-danger px-4 py-2" onClick={() => {
           localStorage.removeItem("agent_token");
           navigate("/agent/login");
         }}>
@@ -271,21 +279,21 @@ export default function AgentDashboard() {
       </div>
 
       {queue.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-          <MessageSquare size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+        <div className="text-center py-10 text-mutedLight dark:text-mutedDark">
+          <MessageSquare size={48} className="opacity-20 mb-4 mx-auto" />
           <p>No pending escalations in queue.</p>
-          <p style={{ fontSize: '14px', marginTop: '8px' }}>You're all caught up!</p>
+          <p className="text-sm mt-2">You're all caught up!</p>
         </div>
       ) : (
         queue.map((item) => (
           <article className="queueItem" key={item.conversationId}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>{item.conversationId}</h3>
-              {item.status === 'agent_active' && <span className="badge agent_active" style={{ fontSize: '11px', padding: '4px 8px' }}>In Progress</span>}
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="m-0 text-base font-semibold">{item.conversationId}</h3>
+              {item.status === 'agent_active' && <span className="badge agent_active px-2 py-1 text-[11px]">In Progress</span>}
             </div>
-            <p className="muted" style={{ marginBottom: '8px' }}><strong>Reason:</strong> <span style={{ color: 'var(--accent-warning)' }}>{item.reason}</span></p>
-            <p className="muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}><strong>Last:</strong> {item.lastMessage}</p>
-            <button onClick={() => handleClaim(item.conversationId)} style={{marginTop: '16px'}}>
+            <p className="muted mb-2"><strong>Reason:</strong> <span className="text-warning">{item.reason}</span></p>
+            <p className="muted line-clamp-2"><strong>Last:</strong> {item.lastMessage}</p>
+            <button onClick={() => handleClaim(item.conversationId)} className="mt-4">
               <Headphones size={16} /> {item.status === 'agent_active' ? "Resume Chat" : "Claim Conversation"}
             </button>
           </article>

@@ -23,12 +23,12 @@ export default function App() {
         <header className="header">
           <div>
             <h1>Nexus AI</h1>
-            <p className="muted" style={{ marginTop: '4px' }}>Intelligent Escalation System</p>
-            <nav className="nav-links" style={{ marginTop: '16px' }}>
-              <Link to="/" className="nav-link" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <p className="muted mt-1">Intelligent Escalation System</p>
+            <nav className="nav-links mt-4">
+              <Link to="/" className="nav-link flex gap-1.5 items-center">
                 <MonitorSmartphone size={18} /> Customer Desktop
               </Link>
-              <Link to="/agent" className="nav-link" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <Link to="/agent" className="nav-link flex gap-1.5 items-center">
                 <Headphones size={18} /> Agent Desktop
               </Link>
             </nav>
@@ -40,7 +40,7 @@ export default function App() {
         </header>
 
         <Routes>
-          <Route path="/" element={<div style={{maxWidth: '500px', margin: '0 auto'}}><ChatWidget /></div>} />
+          <Route path="/" element={<div className="max-w-[500px] mx-auto"><ChatWidget /></div>} />
           <Route path="/agent" element={<AgentDashboard />} />
           <Route path="/agent/login" element={<AgentLogin />} />
         </Routes>

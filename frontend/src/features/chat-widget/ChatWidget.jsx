@@ -92,7 +92,7 @@ export default function ChatWidget() {
   return (
     <section className="card">
       <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-2">
           <h2>Customer Support</h2>
         </div>
         <span className={`badge ${status}`}>
@@ -101,7 +101,7 @@ export default function ChatWidget() {
           {status === "agent_active" && <><CheckCircle2 size={14} /> Agent Connected</>}
         </span>
       </div>
-      <p className="muted" style={{ marginBottom: '16px' }}>Session ID: {conversationId}</p>
+      <p className="muted mb-4">Session ID: {conversationId}</p>
 
       <div className="chatWindow" ref={scrollRef}>
         {messages.map((message, index) => (
@@ -122,8 +122,8 @@ export default function ChatWidget() {
             <div className="bubble-header">
               <Bot size={14} /> <span>Nexus AI</span>
             </div>
-            <div className="bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Loader2 size={16} className="lucide-spin" style={{ animation: 'spin 2s linear infinite' }} /> Typing...
+            <div className="bubble flex items-center gap-2">
+              <Loader2 size={16} className="lucide-spin animate-spin" /> Typing...
             </div>
           </div>
         )}
@@ -140,12 +140,9 @@ export default function ChatWidget() {
           disabled={loading}
         />
         <button onClick={onSend} disabled={!canSend}>
-          {loading ? <Loader2 size={18} style={{ animation: 'spin 2s linear infinite' }} /> : <><SendHorizontal size={18} /> Send</>}
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <><SendHorizontal size={18} /> Send</>}
         </button>
       </div>
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </section>
   );
 }
