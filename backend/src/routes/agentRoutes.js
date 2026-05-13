@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { z } from "zod";
+import { validate } from "../middleware/validate.js";
 import { getPendingQueue, claimConversation, logAuditAction, getAnalytics, getConversationTranscript } from "../services/conversationService.js";
 import { generateConversationSummary } from "../services/claudeService.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -23,7 +25,13 @@ router.get("/agent/analytics", protect, async (req, res, next) => {
   }
 });
 
-router.post("/agent/claim", protect, async (req, res, next) => {
+const claimSchema = z.object({
+  body: z.object({
+    conversationId: z.string({ required_error: "Conversation ID is required" })
+  })
+});
+
+router.post("/agent/claim", protect, validate(claimSchema), async (req, res, next) => {
   try {
     const { conversationId } = req.body;
     if (!conversationId) {
@@ -32,6 +40,11 @@ router.post("/agent/claim", protect, async (req, res, next) => {
     await claimConversation(conversationId);
     await logAuditAction(conversationId, "agent_claimed", `Agent: ${req.user.email || req.user.id}`);
     
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("queue:update");
+    }
+
     res.json({ success: true, message: "Conversation claimed" });
   } catch (err) {
     next(err);

@@ -44,6 +44,7 @@ export function registerChatSocket(io) {
           await updateConversationStatus(conversationId, "handoff_pending");
           await logEscalation(conversationId, escalation.signals);
           await sendEscalationEmail({ conversationId, userMessage: message });
+          io.emit("queue:update");
         } else {
           reply = await generateAssistantReply(message);
         }

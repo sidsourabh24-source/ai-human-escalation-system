@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { z } from "zod";
+import { validate } from "../middleware/validate.js";
 import { generateAssistantReply, classifyEscalation } from "../services/claudeService.js";
 import { buildLeadSnapshot } from "../services/leadService.js";
 import { syncLeadToHubspotMock } from "../integrations/hubspotClient.js";
@@ -15,7 +17,14 @@ import {
 
 const router = Router();
 
-router.post("/chat/message", async (req, res, next) => {
+const messageSchema = z.object({
+  body: z.object({
+    conversationId: z.string().optional(),
+    message: z.string().optional()
+  })
+});
+
+router.post("/chat/message", validate(messageSchema), async (req, res, next) => {
   try {
     const { conversationId = "demo-conv", message = "" } = req.body || {};
 
@@ -50,6 +59,9 @@ router.post("/chat/message", async (req, res, next) => {
         await logEscalation(conversationId, escalation.signals);
         await logAuditAction(conversationId, "escalation_triggered", `User message: ${message}`);
         await sendEscalationEmail({ conversationId, userMessage: message });
+        if (io) {
+          io.emit("queue:update");
+        }
       } else {
         assistantReply = await generateAssistantReply(message);
       }
