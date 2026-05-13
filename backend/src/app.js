@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import healthRoutes from "./routes/healthRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -9,6 +11,15 @@ import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+
+app.use(helmet());
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { success: false, message: "Too many requests from this IP, please try again later." }
+});
+app.use("/api", globalLimiter);
 
 app.use(
   cors({

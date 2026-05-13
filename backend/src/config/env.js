@@ -9,7 +9,7 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   dbHost: process.env.DB_HOST || process.env.MYSQL_HOST || "localhost",
   dbPort: Number(process.env.DB_PORT || process.env.MYSQL_PORT || 3306),
   dbUser: process.env.DB_USER || process.env.MYSQL_USER || "root",
