@@ -101,7 +101,7 @@ export default function ChatWidget() {
           {status === "agent_active" && <><CheckCircle2 size={14} /> Agent Connected</>}
         </span>
       </div>
-      <p className="muted mb-4">Session ID: {conversationId}</p>
+
 
       <div className="chatWindow" ref={scrollRef}>
         {messages.map((message, index) => (

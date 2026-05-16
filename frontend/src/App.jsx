@@ -40,7 +40,7 @@ export default function App() {
         </header>
 
         <Routes>
-          <Route path="/" element={<div className="max-w-[500px] mx-auto"><ChatWidget /></div>} />
+          <Route path="/" element={<div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}><ChatWidget /></div>} />
           <Route path="/agent" element={<AgentDashboard />} />
           <Route path="/agent/login" element={<AgentLogin />} />
         </Routes>

@@ -23,7 +23,7 @@ app.use("/api", globalLimiter);
 
 app.use(
   cors({
-    origin: env.frontendUrl,
+    origin: true,
     credentials: true
   })
 );
