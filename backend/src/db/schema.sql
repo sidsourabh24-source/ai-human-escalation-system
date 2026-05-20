@@ -9,9 +9,16 @@ CREATE TABLE IF NOT EXISTS agents (
 
 CREATE TABLE IF NOT EXISTS conversations (
   id VARCHAR(64) PRIMARY KEY,
-  status ENUM('ai_active', 'handoff_pending', 'agent_active', 'closed') DEFAULT 'ai_active',
+  status ENUM('ai_active', 'handoff_pending', 'agent_active', 'resolved', 'closed') DEFAULT 'ai_active',
+  customer_name VARCHAR(150) NULL,
+  customer_email VARCHAR(190) NULL,
+  claimed_by INT NULL,
+  claimed_by_email VARCHAR(190) NULL,
+  resolved_at TIMESTAMP NULL,
+  resolve_validated_by ENUM('user', 'system') NULL,
   started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (claimed_by) REFERENCES agents(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS messages (

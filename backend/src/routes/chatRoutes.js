@@ -12,7 +12,8 @@ import {
   updateConversationStatus, 
   logEscalation,
   logAuditAction,
-  saveLead
+  saveLead,
+  setCustomerInfo
 } from "../services/conversationService.js";
 
 const router = Router();
@@ -20,15 +21,23 @@ const router = Router();
 const messageSchema = z.object({
   body: z.object({
     conversationId: z.string().optional(),
-    message: z.string().optional()
+    message: z.string().optional(),
+    senderName: z.string().max(150).nullable().optional(),
+    senderEmail: z.string().email().max(190).nullable().optional().or(z.literal(""))
   })
 });
 
 router.post("/chat/message", validate(messageSchema), async (req, res, next) => {
   try {
-    const { conversationId = "demo-conv", message = "" } = req.body || {};
+    const { conversationId = "demo-conv", message = "", senderName, senderEmail } = req.body || {};
 
     await ensureConversation(conversationId);
+
+    // Feature 5: Persist customer name/email if provided (only stored once via COALESCE)
+    if (senderName || senderEmail) {
+      await setCustomerInfo(conversationId, senderName || null, senderEmail || null);
+    }
+
     await saveMessage(conversationId, "user", message);
 
     const io = req.app.get("io");
@@ -36,6 +45,7 @@ router.post("/chat/message", validate(messageSchema), async (req, res, next) => 
       io.to(conversationId).emit("chat:user-message", {
         conversationId,
         message,
+        senderName: senderName || null,
         createdAt: new Date().toISOString()
       });
     }
@@ -50,6 +60,8 @@ router.post("/chat/message", validate(messageSchema), async (req, res, next) => 
       assistantReply = null;
     } else if (currentStatus === "handoff_pending") {
       assistantReply = "Your message has been sent to the agent. They will reply shortly.";
+    } else if (currentStatus === "resolved") {
+      assistantReply = "This conversation has been resolved. Please start a new chat if you need further assistance.";
     } else {
       escalation = await classifyEscalation(message);
       
@@ -79,7 +91,7 @@ router.post("/chat/message", validate(messageSchema), async (req, res, next) => 
       while (retries > 0) {
         try {
           crmResult = await syncLeadToHubspotMock(lead);
-          break; // Success
+          break;
         } catch (error) {
           retries--;
           console.warn(`CRM sync failed, retries left: ${retries}. Error: ${error.message}`);
