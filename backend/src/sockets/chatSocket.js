@@ -36,6 +36,8 @@ export function registerChatSocket(io) {
       // AI Suppression Logic
       if (currentStatus === "handoff_pending" || currentStatus === "agent_active") {
         reply = "Your message has been sent to the agent. They will reply shortly.";
+      } else if (currentStatus === "resolved") {
+        reply = "This conversation has been resolved. Please start a new chat if you need further assistance.";
       } else {
         escalation = await classifyEscalation(message);
         
@@ -71,6 +73,14 @@ export function registerChatSocket(io) {
         message,
         createdAt: new Date().toISOString()
       });
+    });
+
+    // Feature 3: Agent is typing… indicator
+    // Agent emits this; we broadcast to the conversation room (customer sees it)
+    socket.on("chat:agent-typing", ({ conversationId, isTyping }) => {
+      if (!conversationId) return;
+      // Broadcast to the room but NOT back to the sender (agent's own tab)
+      socket.to(conversationId).emit("chat:agent-typing", { isTyping: !!isTyping });
     });
   });
 }
