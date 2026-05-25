@@ -5,6 +5,7 @@ import {
   getPendingQueue,
   claimConversation,
   resolveConversation,
+  transferConversation,
   logAuditAction,
   getAnalytics,
   getConversationTranscript,
@@ -139,6 +140,91 @@ router.get("/agent/conversations/:id/audit", protect, async (req, res, next) => 
     next(err);
   }
 });
+
+// ── Chat Transfer: List currently online agents ───────────────────────────
+// Deduplicates by email to handle agents with multiple open tabs
+router.get("/agent/online", protect, async (req, res, next) => {
+  try {
+    const io = req.app.get("io");
+    const onlineMap = io.onlineAgents ?? new Map();
+
+    // Collect unique agents, excluding the requesting agent
+    const seen = new Set();
+    const agents = [];
+    for (const agent of onlineMap.values()) {
+      if (agent.agentEmail === req.user.email) continue; // skip self
+      if (seen.has(agent.agentEmail)) continue;          // skip duplicates
+      seen.add(agent.agentEmail);
+      agents.push({ agentEmail: agent.agentEmail, agentName: agent.agentName });
+    }
+
+    res.json({ success: true, data: agents });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Chat Transfer: Reassign an active conversation to another agent ────────
+const transferSchema = z.object({
+  body: z.object({
+    targetAgentEmail: z.string().email({ message: "Valid agent email required" }),
+    note: z.string().max(500).nullable().optional()
+  }),
+  params: z.object({ id: z.string() })
+});
+
+router.post(
+  "/agent/conversations/:id/transfer",
+  protect,
+  validate(transferSchema),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { targetAgentEmail, note } = req.body;
+      const fromEmail = req.user.email;
+
+      if (fromEmail === targetAgentEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "You cannot transfer a conversation to yourself."
+        });
+      }
+
+      const ok = await transferConversation(id, targetAgentEmail);
+      if (!ok) {
+        return res.status(409).json({
+          success: false,
+          message: "Transfer failed. Conversation may not be active."
+        });
+      }
+
+      const auditDetail = `From: ${fromEmail} → To: ${targetAgentEmail}${
+        note ? `. Note: ${note}` : ""
+      }`;
+      await logAuditAction(id, "conversation_transferred", auditDetail);
+
+      const io = req.app.get("io");
+      if (io && io.onlineAgents) {
+        // Notify the target agent on their specific socket
+        for (const [socketId, agent] of io.onlineAgents.entries()) {
+          if (agent.agentEmail === targetAgentEmail) {
+            io.to(socketId).emit("chat:transferred-to-you", {
+              conversationId: id,
+              fromAgent: fromEmail,
+              note: note ?? null
+            });
+            break; // one notification per transfer is enough
+          }
+        }
+        io.emit("queue:update"); // refresh all agent queues
+      }
+
+      res.json({ success: true, message: "Conversation transferred successfully." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // History: List all resolved escalations with search + pagination
 router.get("/agent/history", protect, async (req, res, next) => {

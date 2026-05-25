@@ -164,6 +164,29 @@ export const resolveConversation = async (conversationId, validatedBy = "user") 
   }
 };
 
+// Chat Transfer: Reassign an active conversation to a different agent
+export const transferConversation = async (conversationId, newAgentEmail) => {
+  try {
+    // Look up the receiving agent's numeric ID for the FK constraint
+    const [agentRows] = await pool.query(
+      `SELECT id FROM agents WHERE email = ? LIMIT 1`,
+      [newAgentEmail]
+    );
+    const newAgentId = agentRows[0]?.id ?? null;
+
+    const [result] = await pool.query(
+      `UPDATE conversations
+       SET claimed_by = ?, claimed_by_email = ?
+       WHERE id = ? AND status = 'agent_active'`,
+      [newAgentId, newAgentEmail, conversationId]
+    );
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error("Error transferring conversation:", error);
+    return false;
+  }
+};
+
 // Feature 1: Auto-resolve conversations after 7 days of inactivity
 export const autoResolveStaleConversations = async () => {
   try {

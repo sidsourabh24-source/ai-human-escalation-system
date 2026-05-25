@@ -22,7 +22,7 @@ export const login = async (req, res, next) => {
 
     if (isMatch) {
       const token = jwt.sign(
-        { id: agent.id, role: agent.role },
+        { id: agent.id, email: agent.email, name: agent.name, role: agent.role },
         env.jwtSecret,
         { expiresIn: env.jwtExpiresIn }
       );

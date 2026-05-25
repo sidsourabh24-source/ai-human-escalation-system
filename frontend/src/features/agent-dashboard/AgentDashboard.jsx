@@ -10,11 +10,12 @@ import {
   fetchHistory
 } from "../../services/agentApi";
 import { fetchTranscript } from "../../services/chatApi";
+import TransferModal from "./TransferModal";
 import {
   Bot, User, Headphones, SendHorizontal, LogOut, ArrowLeft,
   Inbox, MessageSquare, BarChart3, AlertCircle, Users,
   CheckCheck, Lock, ChevronDown, ChevronUp, ClipboardList,
-  CheckCircle2, Clock, Sparkles, History, Search
+  CheckCircle2, Clock, Sparkles, History, Search, ArrowRightLeft
 } from "lucide-react";
 import io from "socket.io-client";
 
@@ -30,16 +31,25 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-// Helper: get current agent email from JWT stored in localStorage
-function getCurrentAgentEmail() {
+// Helper: decode agent identity from stored JWT
+function getCurrentAgentInfo() {
   try {
     const token = localStorage.getItem("agent_token");
     if (!token) return null;
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.email || null;
+    return {
+      id:    payload.id    || null,
+      email: payload.email || null,
+      name:  payload.name  || payload.email || null
+    };
   } catch {
     return null;
   }
+}
+
+// Helper: get current agent email from JWT stored in localStorage
+function getCurrentAgentEmail() {
+  return getCurrentAgentInfo()?.email ?? null;
 }
 
 export default function AgentDashboard() {
@@ -56,6 +66,10 @@ export default function AgentDashboard() {
   const [isResolved, setIsResolved] = useState(false);
   const [claimError, setClaimError] = useState("");      // Feature 4: double-claim error
   const [activeCustomerName, setActiveCustomerName] = useState(null);
+
+  // Chat Transfer state
+  const [showTransferModal,    setShowTransferModal]    = useState(false);
+  const [transferNotification, setTransferNotification] = useState(null); // { conversationId, fromAgent, note }
 
   // History state
   const [activeTab, setActiveTab] = useState("queue");
@@ -168,6 +182,26 @@ export default function AgentDashboard() {
     }
   }, [loadSummary, loadAuditLogs]);
 
+  // ─── Agent Presence: register as online + listen for incoming transfers ────
+  useEffect(() => {
+    const agentInfo = getCurrentAgentInfo();
+    if (agentInfo?.email) {
+      socket.emit("agent:online", {
+        agentId:   agentInfo.id,
+        agentEmail: agentInfo.email,
+        agentName:  agentInfo.name
+      });
+    }
+
+    const handleTransferredToMe = ({ conversationId, fromAgent, note }) => {
+      setTransferNotification({ conversationId, fromAgent, note });
+      refreshQueue(); // pull the transferred conversation into the queue
+    };
+
+    socket.on("chat:transferred-to-you", handleTransferredToMe);
+    return () => socket.off("chat:transferred-to-you", handleTransferredToMe);
+  }, [refreshQueue]);
+
   // ─── Initial queue load + queue:update socket ──────────────────────────────
   useEffect(() => {
     refreshQueue();
@@ -272,7 +306,18 @@ export default function AgentDashboard() {
     setShowAuditLog(false);
     setIsResolved(false);
     setActiveCustomerName(null);
+    setShowTransferModal(false);
     localStorage.removeItem("agent_active_chat");
+  };
+
+  // ─── Chat Transfer handlers ────────────────────────────────────────────────
+  const openTransferModal  = () => setShowTransferModal(true);
+  const closeTransferModal = () => setShowTransferModal(false);
+
+  // Called by TransferModal on success: show a brief toast, then go to queue
+  const handleTransferDone = (toAgentEmail) => {
+    setShowTransferModal(false);
+    handleBack();
   };
 
   // ─── View Transcript from History ──────────────────────────────────────────
@@ -293,40 +338,63 @@ export default function AgentDashboard() {
   // ─── ACTIVE CHAT VIEW ──────────────────────────────────────────────────────
   if (activeChat) {
     return (
-      <div className="agent-chat-layout">
-        {/* Main Chat Panel */}
-        <section className="card agent-chat-main">
-          <div className="card-header agent-chat-header">
-            <div className="flex items-center gap-3 flex-wrap">
-              <button className="btn-outline px-3 py-2" onClick={handleBack} id="back-to-queue-btn">
-                <ArrowLeft size={18} /> Back
-              </button>
-              <div>
-                <h2 className="m-0 agent-chat-title">
-                  {activeCustomerName ? (
-                    <><User size={18} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />{activeCustomerName}</>
-                  ) : "Active Chat"}
-                </h2>
-                <p className="muted" style={{ fontSize: "12px", margin: 0, fontFamily: "monospace" }}>{activeChat}</p>
+      <>
+        {/* Transfer Modal */}
+        {showTransferModal && (
+          <TransferModal
+            conversationId={activeChat}
+            onClose={closeTransferModal}
+            onTransferred={handleTransferDone}
+          />
+        )}
+
+        <div className="agent-chat-layout">
+          {/* Main Chat Panel */}
+          <section className="card agent-chat-main">
+            <div className="card-header agent-chat-header">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button className="btn-outline px-3 py-2" onClick={handleBack} id="back-to-queue-btn">
+                  <ArrowLeft size={18} /> Back
+                </button>
+                <div>
+                  <h2 className="m-0 agent-chat-title">
+                    {activeCustomerName ? (
+                      <><User size={18} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />{activeCustomerName}</>
+                    ) : "Active Chat"}
+                  </h2>
+                  <p className="muted" style={{ fontSize: "12px", margin: 0, fontFamily: "monospace" }}>{activeChat}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {isResolved ? (
+                  <span className="badge agent_resolved">
+                    <CheckCheck size={14} /> Resolved
+                  </span>
+                ) : (
+                  <>
+                    {/* Transfer Button */}
+                    <button
+                      id="transfer-chat-btn"
+                      className="btn-transfer"
+                      onClick={openTransferModal}
+                      title="Transfer this conversation to another agent"
+                    >
+                      <ArrowRightLeft size={16} /> Transfer
+                    </button>
+
+                    {/* Resolve Button */}
+                    <button
+                      id="resolve-conversation-btn"
+                      className="btn-resolve"
+                      onClick={handleResolve}
+                      title="Mark conversation as resolved"
+                    >
+                      <CheckCircle2 size={16} /> Resolve
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {isResolved ? (
-                <span className="badge agent_resolved">
-                  <CheckCheck size={14} /> Resolved
-                </span>
-              ) : (
-                <button
-                  id="resolve-conversation-btn"
-                  className="btn-resolve"
-                  onClick={handleResolve}
-                  title="Mark conversation as resolved"
-                >
-                  <CheckCircle2 size={16} /> Resolve
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* Messages */}
           <div className="chatWindow" ref={scrollRef}>
@@ -367,10 +435,10 @@ export default function AgentDashboard() {
               </button>
             </div>
           )}
-        </section>
+          </section>
 
-        {/* Right Sidebar */}
-        <aside className="agent-sidebar">
+          {/* Right Sidebar */}
+          <aside className="agent-sidebar">
           {/* AI Summary Panel */}
           <section className="card agent-sidebar-card">
             <div className="card-header pb-3 flex justify-between items-center">
@@ -463,7 +531,8 @@ export default function AgentDashboard() {
             )}
           </section>
         </aside>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -511,6 +580,47 @@ export default function AgentDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Chat Transfer Notification Banner ──────────────────────────────── */}
+      {transferNotification && (
+        <div className="transfer-notification-banner" role="alert" id="transfer-notification-banner">
+          <span className="transfer-notification-icon">
+            <ArrowRightLeft size={18} />
+          </span>
+          <div className="transfer-notification-body">
+            <strong>Conversation transferred to you</strong>
+            <span className="transfer-notification-from">
+              From: <em>{transferNotification.fromAgent}</em>
+            </span>
+            {transferNotification.note && (
+              <span className="transfer-notification-note">
+                📝 {transferNotification.note}
+              </span>
+            )}
+          </div>
+          <div className="transfer-notification-actions">
+            <button
+              className="btn-transfer-open"
+              id="open-transferred-chat-btn"
+              onClick={() => {
+                setTransferNotification(null);
+                handleClaim(transferNotification.conversationId, null);
+              }}
+            >
+              Open Chat
+            </button>
+            <button
+              className="transfer-notification-dismiss"
+              aria-label="Dismiss notification"
+              onClick={() => setTransferNotification(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Claim Error Toast */}
       {claimError && (

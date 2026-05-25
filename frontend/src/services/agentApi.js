@@ -118,3 +118,29 @@ export async function fetchHistory({ page = 1, search = "" } = {}) {
   return payload.data;
 }
 
+// Chat Transfer: Fetch all online agents (excluding self)
+export async function fetchOnlineAgents() {
+  const response = await fetch(`${API_BASE}/api/agent/online`, {
+    headers: getHeaders()
+  });
+  if (!response.ok) throw new Error("Failed to fetch online agents");
+  const payload = await response.json();
+  return payload.data; // [{ agentEmail, agentName }, ...]
+}
+
+// Chat Transfer: Reassign the active conversation to another agent
+export async function transferChat(conversationId, targetAgentEmail, note) {
+  const response = await fetch(
+    `${API_BASE}/api/agent/conversations/${conversationId}/transfer`,
+    {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ targetAgentEmail, note: note || null })
+    }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || "Transfer failed");
+  }
+  return response.json();
+}

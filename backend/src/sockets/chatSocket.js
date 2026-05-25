@@ -9,10 +9,31 @@ import {
 import { sendEscalationEmail } from "../services/emailService.js";
 
 export function registerChatSocket(io) {
+  // Shared registry of online agents: Map<socketId, { agentId, agentEmail, agentName }>
+  if (!io.onlineAgents) {
+    io.onlineAgents = new Map();
+  }
+
   io.on("connection", (socket) => {
     socket.on("chat:join", ({ conversationId }) => {
       socket.join(conversationId);
       socket.emit("chat:joined", { conversationId });
+    });
+
+    // ── Agent Presence ──────────────────────────────────────────────────────
+    // Emitted by AgentDashboard on mount; registers the agent as "online"
+    socket.on("agent:online", ({ agentId, agentEmail, agentName }) => {
+      if (!agentEmail) return;
+      io.onlineAgents.set(socket.id, {
+        agentId:   agentId   ?? null,
+        agentEmail,
+        agentName: agentName ?? agentEmail
+      });
+    });
+
+    // Remove the agent from the online registry when they disconnect
+    socket.on("disconnect", () => {
+      io.onlineAgents.delete(socket.id);
     });
 
     socket.on("chat:user-message", async (payload) => {
