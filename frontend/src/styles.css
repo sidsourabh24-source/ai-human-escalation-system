@@ -1056,3 +1056,449 @@ button:disabled {
     padding: 7px 12px;
   }
 }
+
+/* ============================================================
+   CHAT TRANSFER — Button
+   ============================================================ */
+.btn-transfer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+.btn-transfer:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* ============================================================
+   CHAT TRANSFER — Modal Overlay & Container
+   ============================================================ */
+.transfer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.transfer-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.transfer-modal {
+  position: relative;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Header ── */
+.transfer-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transfer-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transfer-modal-icon {
+  display: inline-flex;
+  padding: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 10px;
+  color: #6366f1;
+}
+
+.transfer-modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.transfer-modal-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: -12px 0 0;
+}
+
+.transfer-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.transfer-close-btn:hover {
+  background: var(--surface-solid);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Error Banner ── */
+.transfer-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+/* ── Section Label ── */
+.transfer-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ── Loading & Empty States ── */
+.transfer-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.transfer-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.transfer-empty-state svg {
+  opacity: 0.25;
+  margin-bottom: 4px;
+}
+.transfer-empty-state p {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.transfer-empty-state span {
+  font-size: 13px;
+}
+
+.transfer-refresh-btn {
+  margin-top: 12px;
+  padding: 8px 18px !important;
+  font-size: 13px !important;
+}
+
+/* ── Agent List ── */
+.transfer-agents-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.transfer-agents-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.transfer-agent-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-solid);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+}
+.transfer-agent-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.04);
+}
+.transfer-agent-card.selected {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.transfer-agent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.transfer-agent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.transfer-agent-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transfer-agent-email {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transfer-agent-check {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.transfer-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  box-shadow: 0 0 0 2px var(--surface-solid);
+}
+
+/* ── Handoff Note ── */
+.transfer-note-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.transfer-note-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex: none;
+}
+.transfer-note-textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.transfer-note-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* ── Modal Action Buttons ── */
+.transfer-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-transfer-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+.btn-transfer-confirm:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45);
+}
+.btn-transfer-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ============================================================
+   CHAT TRANSFER — Notification Banner (incoming transfer)
+   ============================================================ */
+.transfer-notification-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.12),
+    rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
+  animation: slideUp 0.3s ease;
+}
+
+.transfer-notification-icon {
+  display: inline-flex;
+  padding: 8px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 10px;
+  color: #6366f1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.transfer-notification-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.transfer-notification-body strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.transfer-notification-from {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.transfer-notification-from em {
+  font-style: normal;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.transfer-notification-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.transfer-notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-transfer-open {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s ease;
+}
+.btn-transfer-open:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.transfer-notification-dismiss {
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: none;
+  line-height: 1;
+}
+.transfer-notification-dismiss:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+}
+
