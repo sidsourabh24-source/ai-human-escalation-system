@@ -9,7 +9,8 @@ async function seedAgent() {
     const role = "admin";
 
     // Check if agent already exists
-    const [existing] = await pool.query("SELECT * FROM agents WHERE email = ?", [email]);
+    const existingResult = await pool.query("SELECT * FROM agents WHERE email = $1", [email]);
+    const existing = existingResult.rows;
     if (existing.length > 0) {
       console.log(`Agent with email ${email} already exists!`);
       process.exit(0);
@@ -19,7 +20,7 @@ async function seedAgent() {
     const password_hash = await bcrypt.hash(password, salt);
 
     await pool.query(
-      "INSERT INTO agents (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
+      "INSERT INTO agents (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
       [name, email, password_hash, role]
     );
 
