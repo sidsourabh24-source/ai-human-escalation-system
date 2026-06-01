@@ -11,7 +11,7 @@ export const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    const [rows] = await pool.query("SELECT * FROM agents WHERE email = ?", [email]);
+    const { rows } = await pool.query("SELECT * FROM agents WHERE email = $1", [email]);
     const agent = rows[0];
 
     if (!agent) {
