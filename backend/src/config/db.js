@@ -3,13 +3,16 @@ import dns from 'dns';
 import { promisify } from 'util';
 import { env } from './env.js';
 
-const lookupAsync = promisify(dns.lookup);
+const resolve4Async = promisify(dns.resolve4);
 
 // Forces resolution of any hostname to a standard IPv4 address
 async function resolveToIPv4(host) {
   try {
-    const result = await lookupAsync(host, { family: 4 });
-    return result.address;
+    const addresses = await resolve4Async(host);
+    if (addresses && addresses.length > 0) {
+      return addresses[0];
+    }
+    return host;
   } catch (error) {
     console.warn(`[db] IPv4 lookup failed for ${host}, using original:`, error.message);
     return host;
