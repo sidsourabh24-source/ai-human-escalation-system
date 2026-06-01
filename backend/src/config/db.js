@@ -1,10 +1,42 @@
 import pg from 'pg';
+import dns from 'dns';
+import { promisify } from 'util';
 import { env } from './env.js';
 
-const config = env.databaseUrl
-  ? { connectionString: env.databaseUrl }
+const lookupAsync = promisify(dns.lookup);
+
+// Forces resolution of any hostname to a standard IPv4 address
+async function resolveToIPv4(host) {
+  try {
+    const result = await lookupAsync(host, { family: 4 });
+    return result.address;
+  } catch (error) {
+    console.warn(`[db] IPv4 lookup failed for ${host}, using original:`, error.message);
+    return host;
+  }
+}
+
+let host = env.dbHost;
+let connectionString = env.databaseUrl;
+
+if (connectionString) {
+  try {
+    // Replaces the connection string's hostname with its direct IPv4 IP
+    const url = new URL(connectionString);
+    const resolvedIp = await resolveToIPv4(url.hostname);
+    url.hostname = resolvedIp;
+    connectionString = url.toString();
+  } catch (err) {
+    console.warn("[db] Failed to parse DATABASE_URL for IPv4 resolution:", err.message);
+  }
+} else if (host) {
+  host = await resolveToIPv4(host);
+}
+
+const config = connectionString
+  ? { connectionString }
   : {
-      host: env.dbHost,
+      host: host,
       port: env.dbPort,
       user: env.dbUser,
       password: env.dbPass,
