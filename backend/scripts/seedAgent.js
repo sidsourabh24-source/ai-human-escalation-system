@@ -1,3 +1,6 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import bcrypt from "bcryptjs";
 import pool from "../src/config/db.js";
 
