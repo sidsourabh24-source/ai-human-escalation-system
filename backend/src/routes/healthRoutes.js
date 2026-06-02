@@ -6,9 +6,9 @@ const router = Router();
 router.get("/health", async (req, res) => {
   let dbStatus = "disconnected";
   try {
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
     dbStatus = "connected";
-    connection.release();
+    client.release();
   } catch (error) {
     dbStatus = "error: " + error.message;
   }
