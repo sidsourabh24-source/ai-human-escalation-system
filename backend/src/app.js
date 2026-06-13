@@ -29,6 +29,14 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    message: "NexusAI Backend API is running successfully. API endpoints are served under /api.",
+    health: "/api/health"
+  });
+});
+
 app.use("/api", healthRoutes);
 app.use("/api", chatRoutes);
 app.use("/api", authRoutes);
