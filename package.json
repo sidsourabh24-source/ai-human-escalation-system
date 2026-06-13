@@ -9,6 +9,11 @@
   "scripts": {
     "dev:frontend": "npm run dev -w frontend",
     "dev:backend": "npm run dev -w backend",
-    "dev": "npm run dev:backend"
+    "dev": "npm run dev:backend",
+    "build": "npm run build --prefix backend",
+    "start": "npm start --prefix backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
